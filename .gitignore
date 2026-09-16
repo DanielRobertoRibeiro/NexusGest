@@ -11,3 +11,15 @@ Backend/.venv*/
 # Configurações de IDE
 .idea/
 .vscode/
+
+# NexusGest: artefatos locais e segredos
+.env.*
+!.env.example
+!Backend/.env.example
+node_modules/
+Frontend/dist/
+.runtime/
+Backend/.setup-token
+artifacts/
+*.log
+.vercel/

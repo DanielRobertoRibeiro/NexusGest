@@ -1,0 +1,12 @@
+.runtime
+.git
+.env
+.env.*
+Backend/.env
+Backend/.setup-token
+Backend/.venv*
+Frontend/node_modules
+Frontend/dist
+artifacts
+**/__pycache__
+**/*.log

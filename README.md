@@ -1,183 +1,104 @@
-# ERP Web
+# NexusGest
 
-Sistema ERP web desenvolvido como projeto pessoal de aprendizagem e portfólio.
-O projeto reúne uma interface administrativa responsiva, uma API REST em Flask
-e persistência de dados em MySQL.
+ERP educacional full stack com React/Vite, Flask e MySQL 8. Evolução do projeto
+ERP Web / VINILAK para organizar clientes, produtos e indicadores.
 
-> **Status:** MVP full stack funcional em ambiente local — em desenvolvimento.
+**Versão 1.0 implementada e validada localmente.** Autenticação, perfis,
+relatórios no backend e migração React entregues. Publicação Vercel preparada;
+a operação pública com dados depende de MySQL online, a configurar com o
+proprietário. Não é um ERP fiscal/contábil certificado.
 
-O fluxo principal de clientes e produtos está integrado e persistente. O
-projeto ainda não está concluído para produção: autenticação, testes de
-integração completos, relatórios no backend e deploy permanecem no roadmap.
+## Funcionalidades
 
-## Funcionalidades disponíveis
+- Dashboard real, estoque por categoria e alertas de estoque baixo.
+- Clientes e produtos: CRUD, pesquisa, paginação e validação.
+- Relatórios de clientes, produtos e resumo financeiro em PDF, DOCX e CSV.
+- Login, senhas com hash, sessões revogáveis, CSRF e limite de tentativas.
+- Administração de usuários com autorização no servidor.
+- Interface React responsiva, formulários acessíveis e tratamento de erros.
+- Migrações aditivas que preservam registros existentes.
+- Iniciador Windows, configuração Vercel e Dockerfile alternativo.
 
-- Dashboard com totais de clientes, produtos, faturamento e estoque.
-- CRUD completo de clientes via API e MySQL.
-- CRUD completo de produtos via API e MySQL.
-- Pesquisa dinâmica nas tabelas.
-- Validação no frontend e no backend.
-- Tratamento de carregamento, indisponibilidade e erros da API.
-- Indicador visual do estado do sistema.
-- Destaque para produtos com estoque baixo.
-- Relatórios CSV de clientes, produtos e indicadores financeiros.
-- Interface responsiva para desktop, tablet e celular.
-- Programa original de terminal preservado em `Backend/main.py`.
+| Perfil | Consultar/exportar | Cadastrar/editar | Excluir | Gerenciar equipe |
+| --- | --- | --- | --- | --- |
+| Administrador | Sim | Sim | Sim | Sim |
+| Operador | Sim | Sim | Não | Não |
+| Consulta | Sim | Não | Não | Não |
 
-## Arquitetura
+Faturamento é o valor **informado nos cadastros**, não cálculo de vendas ou lucro.
+Compras, pedidos, movimentações de estoque, NF-e, multiempresa e auditoria de
+negócio não fazem parte desta versão.
 
-```text
-Frontend HTML/CSS/JavaScript
-            ↓ HTTP + JSON
-         API Flask
-            ↓ SQL
-           MySQL
-```
+## Executar
 
-O navegador nunca acessa o MySQL diretamente. As credenciais são lidas apenas
-pelo backend através de variáveis de ambiente.
+No computador configurado, abra **`iniciar.cmd`**. O navegador abre sozinho
+em `http://127.0.0.1:5000`. Não use Live Server nem dois servidores.
+Na primeira abertura, cadastre seu administrador pelo link local apresentado.
 
-## Tecnologias
+**[Guia curto de execução](./guia.md)** · **[Publicação e banco online](./DEPLOY.md)**
 
-### Frontend
+Em outro computador: instale Python 3.12+, Node.js 22.12+ e MySQL 8,
+configure `Backend/.env` conforme o guia e execute `preparar.cmd` uma vez.
 
-- HTML5
-- CSS3
-- JavaScript ES6+
-- Fetch API
-
-### Backend
-
-- Python
-- Flask
-- python-dotenv
-- MySQL Connector/Python
-
-### Banco e ferramentas
-
-- MySQL 8
-- Git e GitHub
-- Live Server durante o desenvolvimento local
-
-## Estado do projeto
-
-| Área | Estado |
-| --- | --- |
-| Interface HTML/CSS/JavaScript | Concluída para o MVP |
-| Dashboard integrado | Concluído |
-| CRUD de clientes | Concluído |
-| CRUD de produtos | Concluído |
-| Persistência MySQL | Concluída |
-| API REST Flask | Concluída para o MVP |
-| Validação e mensagens de erro | Implementadas |
-| Testes unitários básicos da API | Implementados |
-| Relatórios CSV | Implementados no frontend |
-| Autenticação e perfis de acesso | Pendente |
-| Relatórios PDF/DOCX no backend | Pendente |
-| Migração para React/Vite | Planejada, não iniciada |
-| Deploy full stack | Pendente |
-
-## Estrutura principal
+## Organização
 
 ```text
-ERPWEB/
-├── Backend/
-│   ├── .env.example
-│   ├── api.py
-│   ├── banco.py
-│   ├── banco.sql
-│   ├── main.py
-│   ├── requirements.txt
-│   └── test_api.py
-├── Frontend/
-│   ├── config.js
-│   ├── index.html
-│   ├── script.js
-│   └── style.css
-├── .gitignore
-├── guia.md
-└── README.md
+Frontend/src/          React: telas, comunicação com API e estilos
+Backend/api.py         CRUD e entrega da interface compilada
+Backend/security.py    Autenticação, sessões, CSRF e perfis
+Backend/reports.py     Geração de PDF, DOCX e CSV
+Backend/manage.py      Migrações e recuperação administrativa
+Backend/migrations/   Esquema de usuários e sessões
+Backend/test_*.py      Testes unitários e de integração
+api/index.py          Entrada WSGI para Vercel
+vercel.json           Build, funções Python e rotas
+iniciar.cmd           Execução diária no Windows
+preparar.cmd          Instalação e build local
 ```
 
-## Como executar
+Fluxo: navegador → API Flask autenticada → MySQL. A senha SQL nunca vai ao
+navegador. `Backend/main.py` preserva o programa de terminal original, uma
+ferramenta local legada fora da autenticação web.
 
-O roteiro completo, incluindo preparação do MySQL, criação do usuário da
-aplicação, configuração do `.env`, PowerShell, Git Bash e solução de erros está
-disponível em:
-
-### [Guia completo de configuração e uso](./guia.md)
-
-Resumo para um ambiente já configurado:
+## Desenvolvimento e testes
 
 ```powershell
-cd Backend
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate.ps1
-python api.py
+.\.runtime\Scripts\python.exe -m unittest discover -s Backend -p 'test_*.py' -v
+npm.cmd run build --prefix Frontend
 ```
 
-Com a API aberta, execute `Frontend/index.html` usando Live Server e teste:
-
-```text
-http://127.0.0.1:5000/api/health
-```
-
-## Endpoints
-
-| Método | Rota | Finalidade |
-| --- | --- | --- |
-| `GET` | `/api/health` | Verificar API e banco |
-| `GET` | `/api/clientes` | Listar clientes |
-| `POST` | `/api/clientes` | Cadastrar cliente |
-| `PUT` | `/api/clientes/<id>` | Atualizar cliente |
-| `DELETE` | `/api/clientes/<id>` | Excluir cliente |
-| `GET` | `/api/produtos` | Listar produtos |
-| `POST` | `/api/produtos` | Cadastrar produto |
-| `PUT` | `/api/produtos/<id>` | Atualizar produto |
-| `DELETE` | `/api/produtos/<id>` | Excluir produto |
-
-As respostas seguem um envelope consistente:
-
-```json
-{
-  "success": true,
-  "message": "Operação concluída com sucesso.",
-  "data": {}
-}
-```
-
-## Testes
-
-Dentro de `Backend`, com o ambiente virtual ativo:
+Integração: prefira um banco de testes separado já migrado. Os testes criam
+registros identificados aleatoriamente e removem somente seus próprios IDs:
 
 ```powershell
-python -m unittest test_api.py
+$env:RUN_INTEGRATION='1'
+.\.runtime\Scripts\python.exe -m unittest discover -s Backend -p 'test_*.py' -v
+Remove-Item Env:RUN_INTEGRATION
 ```
 
-Os testes atuais verificam validações, respostas HTTP e tratamento de banco
-indisponível sem modificar dados reais.
+Para hot reload: `npm.cmd run dev --prefix Frontend` e, em outro terminal,
+`.\.runtime\Scripts\python.exe Backend/api.py`. Acesse `http://127.0.0.1:5173`;
+configure `ALLOWED_ORIGINS` conforme `.env.example`. No uso diário basta o iniciador.
 
-## Segurança
+## API
 
-- `Backend/.env` não deve ser enviado ao GitHub.
-- `.env.example` contém apenas placeholders.
-- A aplicação deve utilizar um usuário MySQL próprio, sem privilégios de
-  administrador.
-- Senhas já publicadas ou exibidas devem ser trocadas no MySQL.
-- O CORS aberto e o servidor de desenvolvimento Flask devem ser endurecidos
-  antes de um deploy público.
+- Público: `GET /api/health`, `GET /api/auth/status`.
+- Autenticação: `POST /api/auth/setup`, `/api/auth/login`, `/api/auth/logout`,
+  `/api/auth/password`; `GET /api/auth/me`. Setup exige chave privada.
+- Cadastros: `GET/POST /api/clientes`, `/api/produtos`;
+  `PUT/DELETE /api/clientes/<id>`, `/api/produtos/<id>`.
+- Equipe: `GET/POST /api/users`, `PUT /api/users/<id>` (administrador).
+- Relatórios: `GET /api/reports/<clientes|produtos|financeiro>.<pdf|docx|csv>`.
 
-## Roadmap
+Rotas privadas exigem cookie de sessão; escritas também exigem `X-CSRF-Token`.
+Sem credenciais não há acesso aos cadastros ou relatórios.
 
-1. Ampliar testes para cobrir o CRUD com um banco exclusivo de testes.
-2. Implementar autenticação e níveis de acesso.
-3. Gerar relatórios PDF e DOCX no backend.
-4. Avaliar a migração incremental para React e Vite.
-5. Preparar configurações de produção, CORS restrito e servidor WSGI.
-6. Publicar frontend, backend e banco em serviços adequados.
+## Operação e limites
 
-## Objetivo educacional
+Nunca publique `.env`, `.setup-token`, backups ou senhas. Em produção use HTTPS,
+`APP_ENV=production`, banco com TLS, usuário SQL restrito e backups restauráveis.
+Migrações exigem criação de tabelas; prefira uma credencial separada para elas.
 
-O projeto prioriza código legível, evolução incremental e separação clara de
-responsabilidades. A intenção é demonstrar fundamentos de desenvolvimento full
-stack sem esconder o funcionamento atrás de abstrações desnecessárias.
+Testes locais não substituem revisão de segurança, monitoramento, testes de
+carga ou validação fiscal. Docker é uma opção de empacotamento ainda não
+executada neste computador. Consulte [DEPLOY.md](./DEPLOY.md) para os requisitos.

@@ -1,4 +1,4 @@
-"""API REST do ERP Web.
+"""API REST do NexusGest.
 
 Este módulo é independente do programa de terminal (main.py). Ele expõe os
 dados do mesmo MySQL para que o frontend se comunique apenas via HTTP/JSON.
@@ -7,15 +7,23 @@ dados do mesmo MySQL para que o frontend se comunique apenas via HTTP/JSON.
 from decimal import Decimal, InvalidOperation
 import logging
 import re
+import os
+from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.exceptions import HTTPException
 from mysql.connector import Error
 
 from banco import conectar_banco, fechar_banco
+from security import configure_security
+from reports import reports
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 app.config["JSON_SORT_KEYS"] = False
+app.json.ensure_ascii = False
+configure_security(app)
+app.register_blueprint(reports)
 logging.basicConfig(level=logging.INFO)
 
 ESTADOS_VALIDOS = {
@@ -26,13 +34,17 @@ ESTADOS_VALIDOS = {
 STATUS_VALIDOS = {"Ativo", "Inativo"}
 
 
-@app.after_request
-def permitir_cors(resposta):
-    """Permite o frontend local durante o desenvolvimento sem expor o banco."""
-    resposta.headers["Access-Control-Allow-Origin"] = "*"
-    resposta.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    resposta.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    return resposta
+@app.errorhandler(Error)
+def database_error(error):
+    app.logger.exception("Falha de banco")
+    if getattr(error, "errno", None) == 1062:
+        return resposta_erro("Este registro já existe.", 409)
+    return resposta_erro("Não foi possível concluir a operação no banco.", 503)
+
+
+@app.errorhandler(HTTPException)
+def http_error(error):
+    return resposta_erro("Requisição inválida ou recurso não encontrado.", error.code)
 
 
 @app.route("/api/<path:_caminho>", methods=["OPTIONS"])
@@ -60,8 +72,17 @@ def obter_dados_json():
 
 def normalizar_numero(valor, campo, inteiro=False):
     try:
-        numero = int(valor) if inteiro else Decimal(str(valor))
-    except (InvalidOperation, TypeError, ValueError):
+        if isinstance(valor, bool):
+            raise ValueError()
+        numero = Decimal(str(valor))
+        if not numero.is_finite():
+            raise ValueError()
+        if inteiro and numero != numero.to_integral_value():
+            return None, f"{campo} deve ser inteiro."
+        if numero > (2147483647 if inteiro else Decimal('99999999.99')):
+            return None, f"{campo} ultrapassa o limite permitido."
+        numero = int(numero) if inteiro else numero.quantize(Decimal('0.01'))
+    except (InvalidOperation, TypeError, ValueError, OverflowError):
         return None, f"{campo} deve ser um número válido."
 
     if numero < 0:
@@ -71,8 +92,8 @@ def normalizar_numero(valor, campo, inteiro=False):
 
 def validar_cliente(dados):
     cliente = {
-        "company": str(dados.get("company", "")).strip(),
-        "name": str(dados.get("name", "")).strip(),
+        "company": str(dados.get("company") or "").strip(),
+        "name": str(dados.get("name") or "").strip(),
         "cnpj": str(dados.get("cnpj", "")).strip(),
         "state": str(dados.get("state", "")).strip().upper(),
         "status": str(dados.get("status", "")).strip(),
@@ -82,6 +103,8 @@ def validar_cliente(dados):
         return None, "Razão social é obrigatória."
     if not cliente["name"]:
         return None, "Nome fantasia é obrigatório."
+    if len(cliente["company"]) > 150 or len(cliente["name"]) > 150:
+        return None, "Razão social e nome fantasia devem ter até 150 caracteres."
 
     cnpj_numeros = re.sub(r"\D", "", cliente["cnpj"])
     if len(cnpj_numeros) != 14:
@@ -106,13 +129,15 @@ def validar_cliente(dados):
 
 def validar_produto(dados):
     produto = {
-        "name": str(dados.get("name", "")).strip(),
-        "category": str(dados.get("category", "")).strip(),
-        "brand": str(dados.get("brand", "")).strip(),
+        "name": str(dados.get("name") or "").strip(),
+        "category": str(dados.get("category") or "").strip(),
+        "brand": str(dados.get("brand") or "").strip(),
     }
     for campo, rotulo in (("name", "Nome"), ("category", "Categoria"), ("brand", "Marca")):
         if not produto[campo]:
             return None, f"{rotulo} é obrigatório(a)."
+        if len(produto[campo]) > (150 if campo == "name" else 100):
+            return None, f"{rotulo} excede o tamanho permitido."
 
     produto["stock"], erro = normalizar_numero(
         dados.get("stock"), "Estoque", inteiro=True
@@ -376,5 +401,24 @@ def excluir_registro(tabela, identificador, entidade):
         fechar_banco(conexao)
 
 
+DIST = Path(__file__).resolve().parent.parent / "Frontend" / "dist"
+
+
+@app.get("/")
+@app.get("/<path:path>")
+def frontend(path="index.html"):
+    if path.startswith("api/"):
+        return resposta_erro("Recurso não encontrado.", 404)
+    if not DIST.is_dir():
+        return resposta_erro("Compile a interface: cd Frontend e npm run build.", 503)
+    candidate = (DIST / path).resolve()
+    if candidate.is_relative_to(DIST.resolve()) and candidate.is_file():
+        return send_from_directory(DIST, path)
+    if "." in path:
+        return resposta_erro("Arquivo não encontrado.", 404)
+    return send_from_directory(DIST, "index.html")
+
+
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")),
+            debug=os.getenv("FLASK_DEBUG") == "1")

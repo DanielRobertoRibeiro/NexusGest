@@ -21,10 +21,19 @@ def conectar_banco():
 
         configuracao = {
             "host": os.getenv("DB_HOST", "localhost"),
+            "port": int(os.getenv("DB_PORT", "3306")),
             "user": os.getenv("DB_USER", "root"),
             "password": os.getenv("DB_PASSWORD"),
             "database": os.getenv("DB_NAME", "erp_pai"),
+            "charset": "utf8mb4",
+            "collation": "utf8mb4_0900_ai_ci",
+            "use_unicode": True,
+            "connection_timeout": 10,
         }
+
+        if os.getenv("DB_SSL_CA"):
+            configuracao.update(ssl_ca=os.environ["DB_SSL_CA"], ssl_verify_cert=True,
+                                ssl_verify_identity=True)
 
         if not configuracao["password"]:
             print(
@@ -35,10 +44,7 @@ def conectar_banco():
 
         conexao = mysql.connector.connect(**configuracao)
 
-        if conexao.is_connected():
-            print("Conexão com MySQL estabelecida.")
-
-            return conexao
+        return conexao
 
     except Error as erro:
 
@@ -57,4 +63,3 @@ def fechar_banco(conexao):
 
         conexao.close()
 
-        print("Conexão com MySQL encerrada.")

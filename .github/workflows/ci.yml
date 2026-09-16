@@ -1,0 +1,42 @@
+name: NexusGest checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: nexusgest_test
+          MYSQL_USER: nexusgest
+          MYSQL_PASSWORD: ci-only-password
+          MYSQL_ROOT_PASSWORD: ci-only-root-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: nexusgest
+      DB_PASSWORD: ci-only-password
+      DB_NAME: nexusgest_test
+      APP_ENV: development
+      RUN_INTEGRATION: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+      - run: pip install -r Backend/requirements.txt
+      - run: python Backend/manage.py migrate
+      - run: python -m unittest discover -s Backend -p 'test_*.py' -v
+      - run: npm ci --prefix Frontend
+      - run: npm run build --prefix Frontend

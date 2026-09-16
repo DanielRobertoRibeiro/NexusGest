@@ -1,234 +1,79 @@
-# Guia de execução e uso do ERP Web
+# NexusGest — guia rápido
 
-Este guia mostra o necessário para configurar e executar o projeto no Windows.
-As etapas de banco e instalação são feitas apenas na primeira vez; depois, use
-a seção **Execução diária**.
+## Usar novamente neste computador
 
-> Nunca coloque senhas reais no código, no `.env.example` ou no GitHub. Use
-> somente `Backend/.env`, que está ignorado pelo Git.
+1. Abra **`iniciar.cmd`** na raiz do projeto.
+2. O navegador abrirá em **http://127.0.0.1:5000**. Entre com sua conta NexusGest.
+3. Mantenha a janela aberta. Ao terminar, pressione `Ctrl+C` nela.
 
-## 1. Preparar o MySQL — primeira execução
+**Sem Live Server, Workbench, ativação de ambiente ou dois terminais.** O
+iniciador serve frontend e API juntos. Não recrie banco, usuários SQL ou `.env`.
+Na primeira abertura desta versão, use o link privado de setup exibido pelo
+iniciador para escolher nome, e-mail e senha do primeiro administrador.
 
-Verifique se o serviço está ativo:
-
-```powershell
-Get-Service MySQL80
-```
-
-Se estiver parado, abra o PowerShell como Administrador:
+Se MySQL estiver parado, execute no PowerShell como administrador:
 
 ```powershell
 Start-Service MySQL80
 ```
 
-O serviço precisa estar ativo porque a API salva e consulta os dados no MySQL.
+## Instalar em outro computador — apenas uma vez
 
-Entre no MySQL como administrador:
-
-```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
-```
-
-Digite a senha de `root`. Nada aparece durante a digitação; isso é normal.
-
-Crie as tabelas e os dados fictícios:
+1. Instale **Python 3.12+**, **Node.js 22.12+** e **MySQL Server 8**.
+   Eles executam a API, compilam React e armazenam dados, respectivamente.
+2. No cliente MySQL, autenticado como administrador, crie banco e usuário:
 
 ```sql
-SOURCE C:/Users/danie/OneDrive/Área de Trabalho/VINILAK/Backend/banco.sql;
-```
-
-O arquivo cria o banco `erp_pai`, as tabelas `clientes` e `produtos` e cinco
-registros de exemplo em cada tabela. Não repita os `INSERT`, pois os CNPJs são
-únicos.
-
-Crie um usuário exclusivo para a aplicação:
-
-```sql
-CREATE USER IF NOT EXISTS 'erpweb_app'@'localhost'
-IDENTIFIED BY 'ESCOLHA_UMA_SENHA_FORTE';
-
-ALTER USER 'erpweb_app'@'localhost'
-IDENTIFIED BY 'ESCOLHA_A_MESMA_SENHA_FORTE';
-
-GRANT SELECT, INSERT, UPDATE, DELETE
+CREATE DATABASE IF NOT EXISTS erp_pai CHARACTER SET utf8mb4;
+CREATE USER 'erpweb_app'@'localhost' IDENTIFIED BY 'SUBSTITUA_POR_SUA_SENHA_SQL';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
 ON erp_pai.* TO 'erpweb_app'@'localhost';
-
-FLUSH PRIVILEGES;
-exit;
 ```
 
-Esse usuário possui apenas as permissões exigidas pelo ERP. Usar `root` na
-aplicação daria acesso desnecessário a todo o servidor.
+Escolha uma senha real no lugar do exemplo. Não execute `CREATE USER` se já
+existir. As permissões de esquema permitem migrações locais. Não importe
+novamente os exemplos de `banco.sql`.
 
-## 2. Configurar o `.env` — primeira execução
-
-Entre na pasta do backend:
-
-```powershell
-cd "C:\Users\danie\OneDrive\Área de Trabalho\VINILAK\Backend"
-```
-
-Crie o arquivo local a partir do modelo:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-No Git Bash, use `cp .env.example .env` no lugar de `Copy-Item`.
-
-Preencha `Backend/.env`:
+3. Copie `Backend/.env.example` para `Backend/.env` **somente se ainda não
+   existir**. Edite apenas `.env`, com a mesma senha configurada no MySQL:
 
 ```env
 DB_HOST=localhost
+DB_PORT=3306
 DB_USER=erpweb_app
-DB_PASSWORD=A_SENHA_CRIADA_NO_MYSQL
+DB_PASSWORD="SUBSTITUA_PELA_MESMA_SENHA_SQL"
 DB_NAME=erp_pai
+APP_ENV=development
+ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 ```
 
-A senha precisa ser a mesma configurada no comando `CREATE USER`. Alterar
-somente o `.env` não modifica a senha existente no MySQL.
+4. Abra **`preparar.cmd`**. Instala dependências em `.runtime`, compila React e
+   cria somente tabelas/migrações faltantes, preservando os cadastros.
+5. Abra **`iniciar.cmd`** e crie seu administrador. A senha NexusGest tem de
+   12 a 128 caracteres; **não é a senha do usuário MySQL**.
 
-## 3. Preparar o Python — primeira execução
+## Usar e administrar
 
-Ainda dentro de `Backend`, crie o ambiente isolado:
+- **Clientes / Produtos:** pesquisar, cadastrar e editar; só administrador exclui.
+- **Relatórios:** baixar PDF, DOCX ou CSV do banco atual.
+- **Equipe e acessos:** administrador cria usuários de operação ou consulta.
+- **Minha conta:** trocar senha NexusGest; sessões antigas são revogadas.
+
+Esqueceu a senha NexusGest? Na raiz, um administrador local pode redefini-la:
 
 ```powershell
-python -m venv .venv
+.\.runtime\Scripts\python.exe Backend/manage.py reset-password --email seu@email.com
 ```
 
-Ative-o no PowerShell:
+## Problemas comuns
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate.ps1
-```
+| Mensagem | Ação |
+| --- | --- |
+| Porta 5000 ocupada | Encerre a API antiga com Ctrl+C; use só um iniciador. |
+| Access denied / 1045 | Confira a senha SQL no `.env`; mudar o arquivo não altera o MySQL. |
+| Banco indisponível | Confira serviço MySQL80, DB_HOST, DB_PORT e DB_NAME. |
+| Falta biblioteca ou build | Rode `preparar.cmd` novamente. |
+| Sem permissão para criar tabelas | Conceda as permissões de migração do passo 2. |
 
-No Git Bash, use:
-
-```bash
-source .venv/Scripts/activate
-```
-
-Instale as dependências:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-O ambiente virtual impede que Flask, MySQL Connector e `python-dotenv` entrem
-em conflito com bibliotecas de outros projetos.
-
-Teste a instalação:
-
-```powershell
-python -m unittest test_api.py
-```
-
-O resultado esperado é `Ran 3 tests` e `OK`.
-
-## 4. Executar o projeto
-
-Use apenas um terminal para a API:
-
-```powershell
-cd "C:\Users\danie\OneDrive\Área de Trabalho\VINILAK\Backend"
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-.\.venv\Scripts\Activate.ps1
-python api.py
-```
-
-Mantenha o terminal aberto. A mensagem esperada é:
-
-```text
-Running on http://127.0.0.1:5000
-```
-
-Teste a conexão completa entre Flask e MySQL:
-
-[http://127.0.0.1:5000/api/health](http://127.0.0.1:5000/api/health)
-
-O resultado deve conter `"status": "online"`.
-
-Depois, no VS Code:
-
-1. Abra `Frontend/index.html`.
-2. Clique com o botão direito.
-3. Escolha **Open with Live Server**.
-4. Se a página já estava aberta, pressione `Ctrl+F5`.
-
-O Live Server serve a interface por HTTP. O frontend chama a API configurada
-em `Frontend/config.js`: `http://127.0.0.1:5000/api`.
-
-## 5. Usar o sistema
-
-- **Dashboard:** mostra totais de clientes, produtos, faturamento e estoque.
-- **Clientes:** permite pesquisar, cadastrar, editar e excluir. O CNPJ precisa
-  conter 14 dígitos e não pode estar repetido.
-- **Produtos:** permite pesquisar, cadastrar, editar e excluir; preço e estoque
-  não aceitam valores negativos.
-- **Relatórios:** gera arquivos CSV usando os dados carregados do MySQL.
-
-Depois de cadastrar ou editar, atualize a página. Se o registro continuar
-visível, a persistência no MySQL está funcionando.
-
-## 6. Execução diária
-
-Depois da configuração inicial, faça somente isto:
-
-1. Confirme que o serviço `MySQL80` está ativo.
-2. Abra um PowerShell em `Backend`.
-3. Ative `.venv`.
-4. Execute `python api.py` e deixe o terminal aberto.
-5. Abra `Frontend/index.html` com Live Server.
-6. Ao terminar, pressione `Ctrl+C` no terminal da API.
-
-Não recrie o banco, o usuário, o `.env` ou o ambiente virtual a cada execução.
-
-## 7. Erros mais comuns
-
-### “Não foi possível acessar a API”
-
-O Flask não está rodando. Execute `python api.py` e mantenha o terminal aberto.
-
-### `1045 Access denied`
-
-O usuário ou a senha do `.env` não corresponde ao MySQL. Teste diretamente:
-
-```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" `
-    -u erpweb_app -p -D erp_pai
-```
-
-### `Unknown database 'erp_pai'`
-
-O `banco.sql` ainda não foi executado ou `DB_NAME` está incorreto.
-
-### `ModuleNotFoundError: No module named 'flask'`
-
-Ative `.venv` e execute `python -m pip install -r requirements.txt`.
-
-### `Copy-Item: command not found`
-
-Você está no Git Bash. Use `cp .env.example .env`.
-
-### `Address already in use`
-
-Outra API já ocupa a porta 5000. Volte ao terminal anterior e pressione
-`Ctrl+C`. Não execute `api.py` simultaneamente no Bash e no PowerShell.
-
-### Alterei o `.env`, mas o erro continua
-
-Pare a API com `Ctrl+C` e inicie novamente; o `.env` é carregado na inicialização.
-
-## Checklist
-
-- [ ] `MySQL80` está ativo.
-- [ ] `erp_pai` contém `clientes` e `produtos`.
-- [ ] `Backend/.env` possui a credencial correta de `erpweb_app`.
-- [ ] `.venv` está ativo e os testes retornam `OK`.
-- [ ] `/api/health` retorna `online`.
-- [ ] `index.html` está aberto com Live Server.
-- [ ] Cadastros permanecem depois de atualizar a página.
-
-Com esses itens confirmados, o fluxo está completo: frontend → API Flask →
-MySQL.
+Após alterar `.env`, reinicie o iniciador. Publicação sem depender do PC:
+**[DEPLOY.md](./DEPLOY.md)**. Nunca envie `.env` ao GitHub.
