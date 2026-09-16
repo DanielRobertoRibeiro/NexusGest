@@ -1,1 +1,6 @@
--r Backend/requirements.txt
+# Dependências explícitas: o empacotador Python da Vercel não resolve o include.
+Flask>=3.0,<4.0
+mysql-connector-python>=9.0,<10.0
+python-dotenv>=1.0,<2.0
+reportlab>=4.4,<5.0
+python-docx>=1.2,<2.0
