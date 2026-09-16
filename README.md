@@ -4,9 +4,12 @@ ERP educacional full stack com React/Vite, Flask e MySQL 8. Evolução do projet
 ERP Web / VINILAK para organizar clientes, produtos e indicadores.
 
 **Versão 1.0 implementada e validada localmente.** Autenticação, perfis,
-relatórios no backend e migração React entregues. Publicação Vercel preparada;
-a operação pública com dados depende de MySQL online, a configurar com o
+relatórios no backend e migração React entregues. Frontend e API publicados
+na Vercel; a operação pública com dados depende de MySQL online, a configurar com o
 proprietário. Não é um ERP fiscal/contábil certificado.
+
+**[Acessar NexusGest](https://nexusgest-two.vercel.app)** — enquanto o banco
+online não estiver configurado, a página exibe um aviso de preparação.
 
 ## Funcionalidades
 
@@ -61,6 +64,10 @@ navegador. `Backend/main.py` preserva o programa de terminal original, uma
 ferramenta local legada fora da autenticação web.
 
 ## Desenvolvimento e testes
+
+Validação da versão: 20 testes passaram localmente e no GitHub Actions, com
+MySQL 8 isolado no CI. Build React aprovado; telas de clientes, produtos e
+relatórios conferidas no navegador, incluindo layout móvel de relatórios.
 
 ```powershell
 .\.runtime\Scripts\python.exe -m unittest discover -s Backend -p 'test_*.py' -v

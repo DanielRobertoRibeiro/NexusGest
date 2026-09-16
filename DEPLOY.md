@@ -1,5 +1,11 @@
 # Publicação do NexusGest
 
+Frontend e API publicados em **https://nexusgest-two.vercel.app**.
+Repositório conectado: `DanielRobertoRibeiro/ERPWEB`, branch `main`.
+Alterações nessa branch disparam um novo deploy automaticamente.
+Verificado: página e status HTTP 200, cadastros sem login HTTP 401;
+health HTTP 503 enquanto o MySQL online estiver ausente (comportamento esperado).
+
 ## Vercel: interface e API no mesmo endereço
 
 Importe o repositório com raiz `./` e preset **Other**. `vercel.json` instala
