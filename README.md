@@ -1,5 +1,15 @@
 # NexusGest
 
+<p align="center">
+  <a href="https://youtu.be/l2cL8J3uKaA">
+    <img src="https://img.youtube.com/vi/l2cL8J3uKaA/hqdefault.jpg" alt="Assista à demonstração do NexusGest" width="760">
+  </a>
+</p>
+
+<p align="center">
+  <strong><a href="https://youtu.be/l2cL8J3uKaA">▶ Assista à demonstração do NexusGest</a></strong>
+</p>
+
 ERP educacional full stack com React/Vite, Flask e MySQL 8. Evolução do projeto
 ERP Web / VINILAK para organizar clientes, produtos e indicadores.
 
