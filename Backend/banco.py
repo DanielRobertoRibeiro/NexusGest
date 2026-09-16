@@ -3,6 +3,8 @@
 # ============================================================
 
 import os
+from pathlib import Path
+import tempfile
 
 import mysql.connector
 from mysql.connector import Error
@@ -10,6 +12,24 @@ from dotenv import load_dotenv
 
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
+
+def _configurar_ssl(configuracao):
+    """Ativa TLS verificado usando um arquivo ou um PEM vindo do ambiente."""
+    ca_path = os.getenv("DB_SSL_CA")
+    ca_pem = os.getenv("DB_SSL_CA_PEM")
+
+    if ca_pem:
+        ca_path = Path(tempfile.gettempdir()) / "nexusgest-mysql-ca.pem"
+        if not ca_path.exists() or ca_path.read_text(encoding="utf-8") != ca_pem:
+            ca_path.write_text(ca_pem, encoding="utf-8")
+
+    if ca_path:
+        configuracao.update(
+            ssl_ca=str(ca_path),
+            ssl_verify_cert=True,
+            ssl_verify_identity=True,
+        )
 
 
 def conectar_banco():
@@ -31,9 +51,7 @@ def conectar_banco():
             "connection_timeout": 10,
         }
 
-        if os.getenv("DB_SSL_CA"):
-            configuracao.update(ssl_ca=os.environ["DB_SSL_CA"], ssl_verify_cert=True,
-                                ssl_verify_identity=True)
+        _configurar_ssl(configuracao)
 
         if not configuracao["password"]:
             print(
@@ -62,4 +80,5 @@ def fechar_banco(conexao):
     if conexao and conexao.is_connected():
 
         conexao.close()
+
 
