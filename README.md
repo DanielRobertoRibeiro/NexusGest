@@ -15,11 +15,10 @@ ERP Web / VINILAK para organizar clientes, produtos e indicadores.
 
 **Versão 1.0 implementada e validada localmente.** Autenticação, perfis,
 relatórios no backend e migração React entregues. Frontend e API publicados
-na Vercel; a operação pública com dados depende de MySQL online, a configurar com o
-proprietário. Não é um ERP fiscal/contábil certificado.
+na Vercel, com banco TiDB Cloud Starter em modo compatível com MySQL.
+Não é um ERP fiscal/contábil certificado.
 
-**[Acessar NexusGest](https://nexusgest-two.vercel.app)** — enquanto o banco
-online não estiver configurado, a página exibe um aviso de preparação.
+**[Acessar NexusGest](https://nexusgest-two.vercel.app)**.
 
 ## Funcionalidades
 
